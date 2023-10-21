@@ -12,12 +12,13 @@ using namespace daisy::seed;
 DaisySeed hw;
 Phasor    phs;
 float     PI               = 3.14159265358979323846f;
-const int size             = 10463;
+const int sampleSize       = 10463;
 float     cosEnv[256]      = {0};
 int       chunkSize        = 0;
 float     potValue         = 1;
 float     potValue2        = 1;
 float     potValue3        = 1;
+float     speed            = 100;
 const int num_adc_channels = 3;
 
 uint32_t wrapIdx(uint32_t idx, uint32_t size)
@@ -37,8 +38,9 @@ void AudioCallback(AudioHandle::InputBuffer  in,
 {
     for(size_t i = 0; i < size; i++)
     {
-        uint32_t idx = wrapIdx((uint32_t)(phs.Process() * chunkSize), size);
-        float    sig = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
+        uint32_t idx
+            = wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize);
+        float sig = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
         out[0][i] = out[1][i] = sig;
     }
 }
@@ -49,7 +51,7 @@ int main(void)
     hw.Init();
     float sample_rate = hw.AudioSampleRate();
     phs.Init(sample_rate);
-    phs.SetFreq((sample_rate * potValue / size));
+    phs.SetFreq((sample_rate * potValue / sampleSize));
     AdcChannelConfig my_adc_config[num_adc_channels];
     my_adc_config[0].InitSingle(hw.GetPin(15));
     my_adc_config[1].InitSingle(hw.GetPin(16));
@@ -69,9 +71,9 @@ int main(void)
         potValue  = hw.adc.GetFloat(0);
         potValue2 = hw.adc.GetFloat(1);
         potValue3 = hw.adc.GetFloat(2);
-
-        chunkSize = potValue2 * size ;
+        //chunkSize = potValue2 * sampleSize;
         //maps the pot value to the frequency of the phasor exponentially
-        phs.SetFreq(pow(2, potValue * 10));
+        speed = ((pow(2, potValue * 10)) / 100) * (sample_rate/sampleSize);
+        phs.SetFreq(speed);
     }
 }
