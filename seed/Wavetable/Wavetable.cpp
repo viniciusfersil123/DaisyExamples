@@ -9,19 +9,24 @@ using namespace daisy;
 using namespace daisysp;
 using namespace daisy::seed;
 
-DaisySeed hw;
-Phasor    phs;
-float     PI               = 3.14159265358979323846f;
+DaisySeed   hw;
+Phasor      phs;
+Phasor      phsImp;
+float       PI               = 3.14159265358979323846f;
 const float sampleSize       = 10463;
-float     cosEnv[256]      = {0};
-float     potValue         = 1;
-float     potValue2        = 1;
-float     potValue3        = 1;
-float     speed            = 100;
-const int num_adc_channels = 3;
-int       printTimer       = 10000;
-float     transposition    = 0;
-float     sampleFrequency  = 0;
+float       cosEnv[256]      = {0};
+float       potValue         = 1;
+float       potValue2        = 1;
+float       potValue3        = 1;
+float       speed            = 100;
+const int   num_adc_channels = 3;
+int         printTimer       = 10000;
+float       transposition    = 0;
+float       sampleFrequency  = 0;
+float       grainSize        = 0;
+float       transp           = 0;
+float       idxTransp        = 0;
+
 
 uint32_t wrapIdx(uint32_t idx, uint32_t size)
 {
@@ -39,6 +44,11 @@ float cents2ratio(float cents)
     return powf(2.0f, cents / 1200.0f);
 }
 
+float ms2samps(float ms, float samplerate)
+{
+    return (ms * 0.001f) * samplerate;
+}
+
 //serial print floats at each
 
 void AudioCallback(AudioHandle::InputBuffer  in,
@@ -47,9 +57,11 @@ void AudioCallback(AudioHandle::InputBuffer  in,
 {
     for(size_t i = 0; i < size; i++)
     {
-        uint32_t idx
-            = wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize);
-        float sig = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
+        float idxTransp
+            = (phsImp.Process() * ms2samps(grainSize, hw.AudioSampleRate()));
+        float    idxSpeed = (phs.Process() * sampleSize);
+        uint32_t idx = wrapIdx((uint32_t)(idxSpeed + idxTransp), sampleSize);
+        float    sig = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
         out[0][i] = out[1][i] = sig;
     }
 }
@@ -61,6 +73,7 @@ int main(void)
     hw.StartLog(true);
     float sample_rate = hw.AudioSampleRate();
     phs.Init(sample_rate);
+    phsImp.Init(sample_rate);
     phs.SetFreq((sample_rate * potValue / sampleSize));
     AdcChannelConfig my_adc_config[num_adc_channels];
     my_adc_config[0].InitSingle(hw.GetPin(15));
@@ -83,16 +96,22 @@ int main(void)
         potValue3 = hw.adc.GetFloat(2);
         //chunkSize = potValue2 * sampleSize;
         //maps the pot value to the frequency of the phasor exponentially
-        speed = ((potValue * 100) / 100);
+        grainSize = (potValue3 * 100) + 3;
+        speed     = ((potValue * 100) / 100);
         //maps the potvalue2 to tranpostion from -1200 to 1200 cents
         sampleFrequency = sample_rate / sampleSize;
-        transposition = cents2ratio((potValue2 * 2400) - 1200);
-        phs.SetFreq((speed * sampleFrequency)/2.2);
+        transposition   = cents2ratio((potValue2 * 2400));
+        phs.SetFreq((speed * sampleFrequency) / 2.2);
+        transp = (transposition - speed) * (1000 / grainSize);
+        phsImp.SetFreq(transp);
+
         if(printTimer == 10000)
         {
             printTimer = 0;
-            hw.PrintLine("Transposition: " FLT_FMT3, FLT_VAR3((speed * sampleFrequency)/2.2));
-            // hw.PrintLine(              "Scaled pot value: %d",                (wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize)));
+            hw.PrintLine(
+                "Debug: " FLT_FMT3,
+                FLT_VAR3((phsImp.Process())));
+            // hw.PrintLine( "Scaled pot value: %d",(wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize)));
         }
         printTimer++;
     }
