@@ -12,14 +12,16 @@ using namespace daisy::seed;
 DaisySeed hw;
 Phasor    phs;
 float     PI               = 3.14159265358979323846f;
-const int sampleSize       = 10463;
+const float sampleSize       = 10463;
 float     cosEnv[256]      = {0};
-int       chunkSize        = 0;
 float     potValue         = 1;
 float     potValue2        = 1;
 float     potValue3        = 1;
 float     speed            = 100;
 const int num_adc_channels = 3;
+int       printTimer       = 10000;
+float     transposition    = 0;
+float     sampleFrequency  = 0;
 
 uint32_t wrapIdx(uint32_t idx, uint32_t size)
 {
@@ -31,6 +33,13 @@ uint32_t wrapIdx(uint32_t idx, uint32_t size)
 
     return idx;
 }
+
+float cents2ratio(float cents)
+{
+    return powf(2.0f, cents / 1200.0f);
+}
+
+//serial print floats at each
 
 void AudioCallback(AudioHandle::InputBuffer  in,
                    AudioHandle::OutputBuffer out,
@@ -47,8 +56,9 @@ void AudioCallback(AudioHandle::InputBuffer  in,
 
 int main(void)
 {
-    //hw.Configure();
+    hw.Configure();
     hw.Init();
+    hw.StartLog(true);
     float sample_rate = hw.AudioSampleRate();
     phs.Init(sample_rate);
     phs.SetFreq((sample_rate * potValue / sampleSize));
@@ -73,7 +83,17 @@ int main(void)
         potValue3 = hw.adc.GetFloat(2);
         //chunkSize = potValue2 * sampleSize;
         //maps the pot value to the frequency of the phasor exponentially
-        speed = ((pow(2, potValue * 10)) / 100) * (sample_rate/sampleSize);
-        phs.SetFreq(speed);
+        speed = ((potValue * 100) / 100);
+        //maps the potvalue2 to tranpostion from -1200 to 1200 cents
+        sampleFrequency = sample_rate / sampleSize;
+        transposition = cents2ratio((potValue2 * 2400) - 1200);
+        phs.SetFreq((speed * sampleFrequency)/2.2);
+        if(printTimer == 10000)
+        {
+            printTimer = 0;
+            hw.PrintLine("Transposition: " FLT_FMT3, FLT_VAR3((speed * sampleFrequency)/2.2));
+            // hw.PrintLine(              "Scaled pot value: %d",                (wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize)));
+        }
+        printTimer++;
     }
 }
