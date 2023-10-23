@@ -12,6 +12,8 @@ using namespace daisy::seed;
 DaisySeed   hw;
 Phasor      phs;
 Phasor      phsImp;
+Phasor      phs2;
+Phasor      phsImp2;
 float       PI               = 3.14159265358979323846f;
 const float sampleSize       = 10463;
 float       cosEnv[256]      = {0};
@@ -59,10 +61,15 @@ void AudioCallback(AudioHandle::InputBuffer  in,
     {
         float idxTransp
             = (phsImp.Process() * ms2samps(grainSize, hw.AudioSampleRate()));
-        float    idxSpeed = (phs.Process() * sampleSize);
-        uint32_t idx = wrapIdx((uint32_t)(idxSpeed + idxTransp), sampleSize);
-        float    sig = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
-        out[0][i] = out[1][i] = sig;
+        float idxTransp2
+            = (phsImp2.Process() * ms2samps(grainSize, hw.AudioSampleRate()));
+        float    idxSpeed  = (phs.Process() * sampleSize);
+        float    idxSpeed2 = (phs2.Process() * sampleSize);
+        uint32_t idx  = wrapIdx((uint32_t)(idxSpeed + idxTransp), sampleSize);
+        uint32_t idx2 = wrapIdx((uint32_t)(idxSpeed2 + idxTransp2), sampleSize);
+        float    sig  = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
+        float    sig2 = sample[idx2] * cosEnv[(uint32_t)(phs2.Process() * 256)];
+        out[0][i] = out[1][i] = (sig + sig2)/2;
     }
 }
 
@@ -72,9 +79,10 @@ int main(void)
     hw.Init();
     hw.StartLog(true);
     float sample_rate = hw.AudioSampleRate();
-    phs.Init(sample_rate);
-    phsImp.Init(sample_rate);
-    phs.SetFreq((sample_rate * potValue / sampleSize));
+    phs.Init(sample_rate,0,0);
+    phsImp.Init(sample_rate,0,0);
+    phsImp2.Init(sample_rate,0,0.5f);
+    phs2.Init(sample_rate,0,0);
     AdcChannelConfig my_adc_config[num_adc_channels];
     my_adc_config[0].InitSingle(hw.GetPin(15));
     my_adc_config[1].InitSingle(hw.GetPin(16));
@@ -108,9 +116,7 @@ int main(void)
         if(printTimer == 10000)
         {
             printTimer = 0;
-            hw.PrintLine(
-                "Debug: " FLT_FMT3,
-                FLT_VAR3((phsImp.Process())));
+            hw.PrintLine("Debug: " FLT_FMT3, FLT_VAR3((phsImp.Process())));
             // hw.PrintLine( "Scaled pot value: %d",(wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize)));
         }
         printTimer++;
