@@ -67,7 +67,7 @@ void AudioCallback(AudioHandle::InputBuffer  in,
         float    idxSpeed  = (phs.Process() * sampleSize);
         float    idxSpeed2 = (phs2.Process() * sampleSize);
         uint32_t idx  = wrapIdx((uint32_t)(idxSpeed + idxTransp), sampleSize);
-        test          = phs2.Process();
+        test          = idxSpeed;
         uint32_t idx2 = wrapIdx((uint32_t)(idxSpeed2 + idxTransp2), sampleSize);
         float    sig  = sample[idx] * cosEnv[(uint32_t)(phs.Process() * 256)];
         float    sig2 = sample[idx2] * cosEnv[(uint32_t)(phs2.Process() * 256)];
@@ -106,14 +106,14 @@ int main(void)
         potValue2       = hw.adc.GetFloat(1);
         potValue3       = hw.adc.GetFloat(2);
         grainSize       = (potValue3 * 100) + 3;
-        speed           = potValue * sampleFrequency;
+        speed           = (((potValue * 100)/100) * sampleFrequency);
         sampleFrequency = sample_rate / sampleSize;
-        //maps the potvalue2 to tranpostion from -1200 to 1200
-        transposition = (potValue2 * 2400) - 1200;
+// mapst to -1220 to 1200
+        transposition = (potValue2 * 1200);
 
         transp = ((cents2ratio(transposition) - potValue)) * (1000 / grainSize);
-        phs.SetFreq((speed));
-        phs2.SetFreq((speed));
+        phs.SetFreq((speed/2));
+        phs2.SetFreq((speed/2));
         phsImp.SetFreq(transp);
         phsImp2.SetFreq(transp);
 
