@@ -53,6 +53,7 @@ float ms2samps(float ms, float samplerate)
     return (ms * 0.001f) * samplerate;
 }
 
+
 //this function outputs inverted phase values if negative frequency is passed
 
 float negativeInvert(Phasor* phs, float frequency)
@@ -74,8 +75,8 @@ void AudioCallback(AudioHandle::InputBuffer  in,
                             * ms2samps(grainSize, hw.AudioSampleRate()));
 
 
-        float    idxSpeed  = (phs.Process() * sampleSize);
-        float    idxSpeed2 = (phs2.Process() * sampleSize);
+        float    idxSpeed  = negativeInvert(&phs, speed) * sampleSize;
+        float    idxSpeed2 = negativeInvert(&phs2, speed) * sampleSize;
         uint32_t idx  = wrapIdx((uint32_t)(idxSpeed + idxTransp), sampleSize);
         test          = idxSpeed;
         uint32_t idx2 = wrapIdx((uint32_t)(idxSpeed2 + idxTransp2), sampleSize);
@@ -100,9 +101,7 @@ int main(void)
     my_adc_config[1].InitSingle(hw.GetPin(16));
     my_adc_config[2].InitSingle(hw.GetPin(17));
     hw.adc.Init(my_adc_config, num_adc_channels);
-    // phs2.Init(sample_rate);
-    // phs2.SetFreq(0.5);
-    //fills cosEnv with a cosine wave with amplitude from 0 to 1
+
     for(int i = 0; i < 256; i++)
     {
         cosEnv[i] = sinf((i / 256.0f) * PI);
@@ -111,19 +110,19 @@ int main(void)
     hw.adc.Start();
     while(1)
     {
-        potValue = hw.adc.GetFloat(0);
-        //potValue = 1;
+        //maps potvalue -1 to 1
+        potValue        = (hw.adc.GetFloat(0) * 2) - 1;
         potValue2       = hw.adc.GetFloat(1);
         potValue3       = hw.adc.GetFloat(2);
         grainSize       = (potValue3 * 100) + 3;
         speed           = (((potValue * 100) / 100) * sampleFrequency);
         sampleFrequency = sample_rate / sampleSize;
-        // mapst to -1220 to 1200
+
         transposition = ((potValue2 * 2400) - 1200);
 
         transp = ((cents2ratio(transposition) - potValue)) * (1000 / grainSize);
-        phs.SetFreq((speed / 2));
-        phs2.SetFreq((speed / 2));
+        phs.SetFreq(abs((speed / 2)));
+        phs2.SetFreq(abs((speed / 2)));
         phsImp.SetFreq(abs(transp));
         phsImp2.SetFreq(abs(transp));
 
@@ -133,8 +132,9 @@ int main(void)
             hw.PrintLine("Size: " FLT_FMT3, FLT_VAR3(grainSize));
             hw.PrintLine("Transposition: " FLT_FMT3, FLT_VAR3(transposition));
             hw.PrintLine("Speed: " FLT_FMT3, FLT_VAR3(speed));
-                        hw.PrintLine("Debug transp: " FLT_FMT3, FLT_VAR3(transp));
-            hw.PrintLine("Debug transp: " FLT_FMT3, FLT_VAR3(negativeInvert(&phsImp, transp)));
+            hw.PrintLine("Debug transp: " FLT_FMT3, FLT_VAR3(transp));
+            hw.PrintLine("Debug transp: " FLT_FMT3,
+                         FLT_VAR3(negativeInvert(&phs, speed)));
             // hw.PrintLine( "Scaled pot value: %d",(wrapIdx((uint32_t)(phs.Process() * sampleSize), sampleSize)));
         }
         printTimer++;
