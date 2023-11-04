@@ -12,7 +12,7 @@ using namespace daisysp;
 using namespace daisy::seed;
 
 DaisySeed      hw;
-float          PI               = 3.14159265358979323846f;
+
 const float    sampleSize       = 10312;
 float          cosEnv[256]      = {0};
 float          potValue         = 1;
@@ -37,30 +37,8 @@ void AudioCallback(AudioHandle::InputBuffer  in,
 {
     for(size_t i = 0; i < size; i++)
     {
-        float idxTransp
-            = (granularPlayer.negativeInvert(&granularPlayer.phsImp_, transp)
-               * granularPlayer.ms2samps(grainSize, hw.AudioSampleRate()));
-        float idxTransp2
-            = (granularPlayer.negativeInvert(&granularPlayer.phsImp2_, transp)
-               * granularPlayer.ms2samps(grainSize, hw.AudioSampleRate()));
-
-
-        float idxSpeed
-            = granularPlayer.negativeInvert(&granularPlayer.phs_, speed)
-              * sampleSize;
-        float idxSpeed2
-            = granularPlayer.negativeInvert(&granularPlayer.phs2_, speed)
-              * sampleSize;
-        uint32_t idx  = granularPlayer.wrapIdx((uint32_t)(idxSpeed + idxTransp),
-                                              sampleSize);
-        test          = idxSpeed;
-        uint32_t idx2 = granularPlayer.wrapIdx(
-            (uint32_t)(idxSpeed2 + idxTransp2), sampleSize);
-        float sig = granularPlayer.sample_[idx]
-                    * cosEnv[(uint32_t)(granularPlayer.phs_.Process() * 256)];
-        float sig2 = granularPlayer.sample_[idx2]
-                     * cosEnv[(uint32_t)(granularPlayer.phs2_.Process() * 256)];
-        out[0][i] = out[1][i] = (sig + sig2) / 2;
+        float sig = granularPlayer.Process(speed, transp, grainSize);
+        out[0][i] = out[1][i] = sig;
     }
 }
 
@@ -80,10 +58,7 @@ int main(void)
     granularPlayer.Init(sample, 10312, sample_rate);
     /////////////////////////////////////////////////
 
-    for(int i = 0; i < 256; i++)
-    {
-        cosEnv[i] = sinf((i / 256.0f) * PI);
-    }
+
     hw.StartAudio(AudioCallback);
     hw.adc.Start();
     while(1)
