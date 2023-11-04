@@ -1,5 +1,5 @@
 #include "granularplayer.h"
-
+//TODO:Implement sample and hold for preventing unwanted transposition when changing values
 using namespace daisysp;
 
 uint32_t GranularPlayer::wrapIdx(uint32_t idx, uint32_t sz)
@@ -29,24 +29,29 @@ float GranularPlayer::negativeInvert(Phasor* phs, float frequency)
     return (frequency > 0) ? phs->Process() : ((phs->Process() * -1) + 1);
 }
 
-float GranularPlayer::Process(float speed, float transposition, float grain_size)
+float GranularPlayer::Process(float speed,
+                              float transposition,
+                              float grain_size)
 {
     grain_size_    = grain_size;
-    speed_         = speed;
-    transposition_ = transposition;
-    float idxTransp
-        = (negativeInvert(&phsImp_, transposition) * ms2samps(grain_size_, sample_rate_));
-    float idxTransp2
-        = (negativeInvert(&phsImp2_, transposition) * ms2samps(grain_size_, sample_rate_));
-    float idxSpeed = negativeInvert(&phs_, speed) * size_;
-    float idxSpeed2
-        = negativeInvert(&phs2_, speed) * size_;
-    uint32_t idx  = wrapIdx((uint32_t)(idxSpeed + idxTransp), size_);
-    uint32_t idx2 = wrapIdx(
-        (uint32_t)(idxSpeed2 + idxTransp2), size_);
-    float sig = sample_[idx]
-                * cosEnv_[(uint32_t)(phs_.Process() * 256)];
-    float sig2 = sample_[idx2]
-                 * cosEnv_[(uint32_t)(phs2_.Process() * 256)];
-    return (sig + sig2) / 2;
+    speed_         = speed * sample_frequency_;
+    transposition_ = (cents2ratio(transposition) - speed)
+                     * (grain_size >= 1 ? 1000 / grain_size_ : 1);
+    //transposition_ = grain_size >= 1 ? 1000 / grain_size_ : 1;
+    //transposition_ = transposition;
+    phs_.SetFreq(abs((speed_ / 2)));
+    phs2_.SetFreq(abs((speed_ / 2)));
+    phsImp_.SetFreq(abs(transposition_));
+    phsImp2_.SetFreq(abs(transposition_));
+    idxTransp_  = (negativeInvert(&phsImp_, transposition_)
+                  * ms2samps(grain_size_, sample_rate_));
+    idxTransp2_ = (negativeInvert(&phsImp2_, transposition_)
+                   * ms2samps(grain_size_, sample_rate_));
+    idxSpeed_   = negativeInvert(&phs_, speed) * size_;
+    idxSpeed2_  = negativeInvert(&phs2_, speed) * size_;
+    idx_        = wrapIdx((uint32_t)(idxSpeed_ + idxTransp_), size_);
+    idx2_       = wrapIdx((uint32_t)(idxSpeed2_ + idxTransp2_), size_);
+    sig_        = sample_[idx_] * cosEnv_[(uint32_t)(phs_.Process() * 256)];
+    sig2_       = sample_[idx2_] * cosEnv_[(uint32_t)(phs2_.Process() * 256)];
+    return (sig_ + sig2_) / 2;
 }
