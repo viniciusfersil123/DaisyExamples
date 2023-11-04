@@ -29,36 +29,6 @@ float          idxTransp        = 0;
 float          test             = 0;
 GranularPlayer granularPlayer;
 
-
-uint32_t wrapIdx(uint32_t idx, uint32_t size)
-{
-    if(idx > size)
-    {
-        idx = idx - size;
-        return idx;
-    }
-
-    return idx;
-}
-
-float cents2ratio(float cents)
-{
-    return powf(2.0f, cents / 1200.0f);
-}
-
-float ms2samps(float ms, float samplerate)
-{
-    return (ms * 0.001f) * samplerate;
-}
-
-
-//this function outputs inverted phase values if negative frequency is passed
-
-float negativeInvert(Phasor* phs, float frequency)
-{
-    return (frequency > 0) ? phs->Process() : ((phs->Process() * -1) + 1);
-}
-
 //serial print floats at each
 
 void AudioCallback(AudioHandle::InputBuffer  in,
@@ -67,20 +37,26 @@ void AudioCallback(AudioHandle::InputBuffer  in,
 {
     for(size_t i = 0; i < size; i++)
     {
-        float idxTransp  = (negativeInvert(&granularPlayer.phsImp_, transp)
-                           * ms2samps(grainSize, hw.AudioSampleRate()));
-        float idxTransp2 = (negativeInvert(&granularPlayer.phsImp2_, transp)
-                            * ms2samps(grainSize, hw.AudioSampleRate()));
+        float idxTransp
+            = (granularPlayer.negativeInvert(&granularPlayer.phsImp_, transp)
+               * granularPlayer.ms2samps(grainSize, hw.AudioSampleRate()));
+        float idxTransp2
+            = (granularPlayer.negativeInvert(&granularPlayer.phsImp2_, transp)
+               * granularPlayer.ms2samps(grainSize, hw.AudioSampleRate()));
 
 
         float idxSpeed
-            = negativeInvert(&granularPlayer.phs_, speed) * sampleSize;
+            = granularPlayer.negativeInvert(&granularPlayer.phs_, speed)
+              * sampleSize;
         float idxSpeed2
-            = negativeInvert(&granularPlayer.phs2_, speed) * sampleSize;
-        uint32_t idx  = wrapIdx((uint32_t)(idxSpeed + idxTransp), sampleSize);
+            = granularPlayer.negativeInvert(&granularPlayer.phs2_, speed)
+              * sampleSize;
+        uint32_t idx  = granularPlayer.wrapIdx((uint32_t)(idxSpeed + idxTransp),
+                                              sampleSize);
         test          = idxSpeed;
-        uint32_t idx2 = wrapIdx((uint32_t)(idxSpeed2 + idxTransp2), sampleSize);
-        float    sig  = granularPlayer.sample_[idx]
+        uint32_t idx2 = granularPlayer.wrapIdx(
+            (uint32_t)(idxSpeed2 + idxTransp2), sampleSize);
+        float sig = granularPlayer.sample_[idx]
                     * cosEnv[(uint32_t)(granularPlayer.phs_.Process() * 256)];
         float sig2 = granularPlayer.sample_[idx2]
                      * cosEnv[(uint32_t)(granularPlayer.phs2_.Process() * 256)];
@@ -112,7 +88,7 @@ int main(void)
     hw.adc.Start();
     while(1)
     {
-        //maps potvalue -1 to 1
+        /////////////////////////////////////////////////
         potValue        = (hw.adc.GetFloat(0) * 2) - 1;
         potValue2       = hw.adc.GetFloat(1);
         potValue3       = hw.adc.GetFloat(2);
@@ -122,7 +98,7 @@ int main(void)
 
         transposition = ((potValue2 * 2400) - 1200);
 
-        transp = ((cents2ratio(transposition) - potValue)) * (1000 / grainSize);
+        transp = ((granularPlayer.cents2ratio(transposition) - potValue)) * (1000 / grainSize);
         granularPlayer.phs_.SetFreq(abs((speed / 2)));
         granularPlayer.phs2_.SetFreq(abs((speed / 2)));
         granularPlayer.phsImp_.SetFreq(abs(transp));

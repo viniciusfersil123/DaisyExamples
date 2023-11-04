@@ -2,7 +2,7 @@
 TARGET = Wavetable
 
 # Sources
-CPP_SOURCES = Wavetable.cpp
+CPP_SOURCES = $(wildcard *.cpp)
 
 # Library Locations
 LIBDAISY_DIR = ../../libDaisy/
