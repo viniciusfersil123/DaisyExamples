@@ -3,73 +3,87 @@
 #define DSY_GRANULARPLAYER_H
 #include <stdint.h>
 #include <cmath>
-//TODO:Erase and and imports phasor
 //TODO:Include header in daisyp.h
 #include "Control/phasor.h"
 #ifdef __cplusplus
+
+//TODO:Wrap in namespace
+#ifndef M_PI
+#define M_PI 3.14159265358979323846 /* pi */
+#endif
 using namespace daisysp;
 
+/** GranularPlayer Module
+
+    Date: November, 2023
+
+    Author: Vinícius Fernandes
+
+    GranularPlayer is a lookup table player that provides independent time stretching and pitch shifting 
+    via granulation.
+    Inspired by the grain.player object from else pure data's library.
+*/
 
 class GranularPlayer
 {
   public:
     GranularPlayer() {}
     ~GranularPlayer() {}
-    //TODO:Create overloads for Init
-    //TODO:Removes size form Inits
-    inline void Init(float* sample, int size, float sample_rate)
-    {
-        sample_      = sample;
-        size_        = size;
-        sample_rate_ = sample_rate;
-        phs_.Init(sample_rate_, 0, 0);
-        phsImp_.Init(sample_rate_, 0, 0);
-        phs2_.Init(sample_rate_, 0, 0.5f);
-        phsImp2_.Init(sample_rate_, 0, 0);
-        sample_frequency_ = sample_rate_ / size_;
-        for(int i = 0; i < 256; i++)
-        {
-            cosEnv_[i] = sinf((i / 256.0f) * PI);
-        }
-    }
-    //public:
+
+    /** Initializes the GranularPlayer module.
+        \param sample pointer to the sample to be played
+        \param size number of elements in the sample array
+        \param sample_rate audio engine sample rate
+    */
+    void Init(float* sample, int size, float sample_rate);
+
+    /** Processes the granular player.
+        \param speed playback speed. 1 is normal speed, 2 is double speed, 0.5 is half speed, etc. Negative values play the sample backwards.
+        \param transposition transposition in cents. 100 cents is one semitone. Negative values transpose down, positive values transpose up.
+        \param grain_size grain size in milliseconds. 1 is 1 millisecond, 1000 is 1 second. Does not accept negative values. Minimum value is 0.001.
+    */
     float Process(float speed, float transposition, float grain_size);
 
-    //private:
+  private:
+    //Wraps an index to the size of the sample array
     uint32_t wrapIdx(uint32_t idx, uint32_t size);
 
+    //Converts cents(1/100th of a semitone) to a ratio
     float cents2ratio(float cents);
 
+    //Converts milliseconds to  number of samples
     float ms2samps(float ms, float samplerate);
 
+    //Inverts the phase of the phasor if the frequency is negative, mimicking pure data's phasor~ object
     float negativeInvert(Phasor* phs, float frequency);
-    //TODO: Organize variables and methods by types and access
-    //TODO:Code SetParams
-    //private:
-    float* sample_;
-    float  sample_rate_;
-    int    size_;
-    float  grain_size_;    //in ms
-    float  speed_;         //in % of original speed
-    float  transposition_; //in cents
-    float  cosEnv_[256] = {0};
-    //TODO:removes PI and use PI in utils.h
-    float PI = 3.14159265358979323846f;
-    float idxTransp_;
-    float idxTransp2_;
-    float idxSpeed_;
-    float idxSpeed2_;
-    float sig_;
-    float sig2_;
-    float sample_frequency_;
-    uint32_t idx_;
-    uint32_t idx2_;
 
 
-    Phasor phs_;
-    Phasor phsImp_;
-    Phasor phs2_;
-    Phasor phsImp2_;
+    float* sample_;        //pointer to the sample to be played
+    float  sample_rate_;   //audio engine sample rate
+    int    size_;          //number of elements in the sample array
+    float  grain_size_;    //grain size in milliseconds
+    float  speed_;         //processed playback speed.
+    float  transposition_; //processed transpotion.
+    float  sample_frequency_;
+    float  cosEnv_[256] = {0}; //cosine envelope for crossfading between grains
+    float
+        idxTransp_; // Adjusted Transposition value contribution to idx of first grain
+    float
+        idxTransp2_; // Adjusted Transposition value contribution to idx of second grain
+    float idxSpeed_; // Adjusted Speed value contribution to idx of first grain
+    float
+        idxSpeed2_; // Adjusted Speed value contribution to idx of second grain
+    float sig_;     // Output of first grain
+    float sig2_;    // Output of second grain
+
+
+    uint32_t idx_;  // Index of first grain
+    uint32_t idx2_; // Index of second grain
+
+    Phasor phs_;     // Phasor for speed
+    Phasor phsImp_;  // Phasor for transposition
+    Phasor phs2_;    // Phasor for speed
+    Phasor phsImp2_; // Phasor for transposition
 };
 
 
