@@ -1,9 +1,7 @@
 #include "daisy_seed.h"
 #include "daisysp.h"
-#include <stdio.h>
 #include "sample.h"
-#include "Utility/dsp.h"
-#include <cstdlib>
+
 using namespace daisy;
 using namespace daisysp;
 using namespace daisy::seed;
@@ -15,8 +13,6 @@ float potValue2;
 float potValue3;
 
 const int num_adc_channels = 3;
-
-int printTimer = 10000;
 
 float speed;
 float transposition;
@@ -57,14 +53,16 @@ int main(void)
 
     while(1)
     {
+        //initializes the pot values
         potValue  = hw.adc.GetFloat(0);
         potValue2 = hw.adc.GetFloat(1);
         potValue3 = hw.adc.GetFloat(2);
 
-        //
+        //scales the pot values to the appropriate range
 
-        grainSize     = (potValue3 * 100) + 3;
+
         speed         = (potValue * 2) - 1;
         transposition = ((potValue2 * 4800) - 2400);
+        grainSize     = (potValue3 * 100) + 3;
     }
 }

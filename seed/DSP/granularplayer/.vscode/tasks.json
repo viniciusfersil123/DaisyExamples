@@ -2,7 +2,10 @@
   "tasks": [
     {
       "command": "make clean; make",
-      "group": "build",
+      "group": {
+        "isDefault": true,
+        "kind": "build"
+      },
       "label": "build",
       "options": {
         "cwd": "${workspaceFolder}"
@@ -32,11 +35,7 @@
       "problemMatcher": [
         "$gcc"
       ],
-      "type": "shell",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
+      "type": "shell"
     },
     {
       "command": "make clean;make",
@@ -84,7 +83,7 @@
       "command": "make",
       "label": "build_libdaisy",
       "options": {
-        "cwd": "${workspaceFolder}/../../libDaisy/"
+        "cwd": "${workspaceFolder}/../../../libDaisy/"
       },
       "problemMatcher": [
         "$gcc"
@@ -95,7 +94,7 @@
       "command": "make",
       "label": "build_daisysp",
       "options": {
-        "cwd": "${workspaceFolder}/../../DaisySP/"
+        "cwd": "${workspaceFolder}/../../../DaisySP/"
       },
       "problemMatcher": [
         "$gcc"

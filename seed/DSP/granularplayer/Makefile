@@ -1,12 +1,12 @@
 # Project Name
-TARGET = Wavetable
+TARGET = granularplayer
 
 # Sources
-CPP_SOURCES = $(wildcard *.cpp)
+CPP_SOURCES = granularplayer.cpp
 
 # Library Locations
-LIBDAISY_DIR = ../../libDaisy/
-DAISYSP_DIR = ../../DaisySP/
+LIBDAISY_DIR = ../../../libDaisy/
+DAISYSP_DIR = ../../../DaisySP/
 
 # Core location, and generic Makefile.
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
