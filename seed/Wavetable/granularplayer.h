@@ -1,6 +1,6 @@
 #pragma once
-#ifndef DSY_GRANULARPLAYER_H
-#define DSY_GRANULARPLAYER_H
+#ifndef DSY_GRANULARPLAYERT_H
+#define DSY_GRANULARPLAYERT_H
 #include <stdint.h>
 #include <cmath>
 //TODO:Erase and and imports phasor
@@ -10,11 +10,11 @@
 using namespace daisysp;
 
 
-class GranularPlayer
+class GranularPlayerT
 {
   public:
-    GranularPlayer() {}
-    ~GranularPlayer() {}
+    GranularPlayerT() {}
+    ~GranularPlayerT() {}
     //TODO:Create overloads for Init
     //TODO:Removes size form Inits
     inline void Init(float* sample, int size, float sample_rate)

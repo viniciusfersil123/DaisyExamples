@@ -2,7 +2,7 @@
 //TODO:Implement sample and hold for preventing unwanted transposition when changing values
 using namespace daisysp;
 
-uint32_t GranularPlayer::wrapIdx(uint32_t idx, uint32_t sz)
+uint32_t GranularPlayerT::wrapIdx(uint32_t idx, uint32_t sz)
 {
     if(idx > sz)
     {
@@ -13,23 +13,23 @@ uint32_t GranularPlayer::wrapIdx(uint32_t idx, uint32_t sz)
     return idx;
 }
 
-float GranularPlayer::cents2ratio(float cents)
+float GranularPlayerT::cents2ratio(float cents)
 {
     return powf(2.0f, cents / 1200.0f);
 }
 
 
-float GranularPlayer::ms2samps(float ms, float samplerate)
+float GranularPlayerT::ms2samps(float ms, float samplerate)
 {
     return (ms * 0.001f) * samplerate;
 }
 
-float GranularPlayer::negativeInvert(Phasor* phs, float frequency)
+float GranularPlayerT::negativeInvert(Phasor* phs, float frequency)
 {
     return (frequency > 0) ? phs->Process() : ((phs->Process() * -1) + 1);
 }
 
-float GranularPlayer::Process(float speed,
+float GranularPlayerT::Process(float speed,
                               float transposition,
                               float grain_size)
 {
